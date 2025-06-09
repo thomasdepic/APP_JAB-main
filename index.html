@@ -64,23 +64,6 @@
         </div>
       </div>
 
-    <!-- Section : Drone -->
-    <div class="toolbar-section" id="section-drone">
-      <button class="toolbar-section-btn" id="drone-section-toggle">
-        <img src="assets/icons/drone-section.svg" alt="Drone">
-      </button>
-
-      <div id="drone-controls" class="toolbar-subsection" style="display: none;">
-        <button class="toolbar-btn" id="btn-connect-drone">
-          <img src="assets/icons/plug.svg" alt="Connecter">
-        </button>
-
-        <button class="toolbar-btn" id="btn-center">
-          <img src="assets/icons/center.svg" alt="Centrer sur drone">
-        </button>
-      </div>
-    </div>
-
 
     <!-- Section : Affichage -->
     <div class="toolbar-section" id="section-display">
@@ -95,6 +78,14 @@
 
         <button class="toolbar-btn" id="btn-basemap-popup">
           <img src="assets/icons/map.svg" alt="Fond de carte">
+        </button>
+
+        <button class="toolbar-btn" id="btn-connect-drone">
+          <img src="assets/icons/plug.svg" alt="Connecter">
+        </button>
+    
+        <button class="toolbar-btn" id="btn-center">
+          <img src="assets/icons/center.svg" alt="Centrer sur drone">
         </button>
       </div>
     </div>
@@ -207,13 +198,12 @@
 
 
   <!-- Info-bulle -->
-  <div id="infoBubble" class="info-bubble">
-    Nombre de points de mesure : 0
-  </div>  
-  <!-- À ajouter dans ton HTML quelque part (ex: dans le popup ou sous la carte) -->
   <div id="validationCounter" class="info-bubble">
-    ✅ Points validés : 0 / 0
+    Points validés : 0 / 0
   </div>
+
+  
+  <button id="validateButton">Valider la mesure</button>
 
 
   <!-- Zone de chargement / sauvegarde -->
