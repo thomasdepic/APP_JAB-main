@@ -15,6 +15,7 @@ export function setOnPositionUpdate(cb) {
   onPositionUpdate = cb;
 }
 
+/** WebSerial ou Android */
 export function initGpsReader() {
   window.receiveSerialLine = line => processLine(line);
 
@@ -25,7 +26,7 @@ export function initGpsReader() {
   }
 }
 
-/* === Web Serial =============================================== */
+/* === Web Serial ======================================== */
 
 export async function connectSerial() {
   if (!("serial" in navigator)) {
@@ -35,10 +36,10 @@ export async function connectSerial() {
 
   try {
     const port = await navigator.serial.requestPort();
-    await port.open({ baudRate: 115200 });
+    await port.open({ baudRate: 115200 }); // ✅ corrigé
 
     const decoder = new TextDecoderStream();
-    const reader = decoder.readable.getReader();
+    const reader  = decoder.readable.getReader();
     port.readable.pipeTo(decoder.writable);
 
     let buffer = "";
@@ -60,47 +61,62 @@ export async function connectSerial() {
   }
 }
 
-/* === Traitement de chaque ligne série ========================= */
+/* === Traitement d’une ligne série ====================== */
 
 function processLine(rawLine) {
   const line = rawLine.trim();
-  console.log(line);
   if (!line.startsWith("GPS:")) return;
 
   console.log(`[gpsReader] 🔎 Traitement : [${line}]`);
 
-  const jsonPart = line.slice(4).trim();
-
-  // Vérifie que la chaîne JSON est complète (évite les erreurs de parsing)
-  if (!jsonPart.startsWith("{") || !jsonPart.endsWith("}")) {
-    console.warn("[gpsReader] ❌ Trame tronquée ou corrompue :", jsonPart);
+  const commaIdx = line.indexOf(",");
+  if (commaIdx === -1) {
+    console.log("[gpsReader] ❌ Ligne ignorée (pas de virgule)");
     return;
   }
 
-  try {
-    const data = JSON.parse(jsonPart);
+  // Partie "GPS:{...}" → extraire la partie JSON
+  const timePart = new Date().toLocaleTimeString();
+  const dataPart = line.slice(4).trim(); // après "GPS:"
 
-    // Accepte même les coordonnées (0.0, 0.0)
-    if (typeof data.lat !== "number" || typeof data.lon !== "number") {
-      console.warn("[gpsReader] ❌ Données GPS invalides :", jsonPart);
-      return;
-    }
+  if (timeDisplay) timeDisplay.textContent = `Heure : ${timePart}`;
 
-    lat = parseFloat(data.lat);
-    lng = parseFloat(data.lon);
+  const data = parseDataPart(dataPart);
+  if (!data) return;
 
-    if (!gpsReady) {
-      gpsReady = true;
-      const gpsStatus = document.getElementById("gpsStatus");
-      gpsStatus?.classList.add("ok");
-      if (gpsStatus) gpsStatus.textContent = "✅ Signal GPS détecté";
-      console.log("✅ Premier signal GPS reçu");
-    }
+  lat = parseFloat(data.lat);
+  lng = parseFloat(data.lon);
 
-    marker.setLatLng([lat, lng]);
-    onPositionUpdate?.({ lat, lng });
-
-  } catch (e) {
-    console.error("[gpsReader] ❌ JSON invalide :", jsonPart, e);
+  if (!gpsReady) {
+    gpsReady = true;
+    const gpsStatus = document.getElementById("gpsStatus");
+    gpsStatus?.classList.add("ok");
+    if (gpsStatus) gpsStatus.textContent = "✅ Signal GPS détecté";
+    console.log("✅ Premier signal GPS reçu");
   }
+
+  marker.setLatLng([lat, lng]);
+  onPositionUpdate?.({ lat, lng });
+}
+
+/* === Extraction JSON ou CSV ============================= */
+
+function parseDataPart(part) {
+  if (part.startsWith("{") && part.endsWith("}")) {
+    try {
+      const obj = JSON.parse(part);
+      if ("lat" in obj && "lon" in obj) return obj;
+    } catch (e) {
+      console.log("[gpsReader] ❌ JSON invalide", e);
+    }
+    return null;
+  }
+
+  const pieces = part.split(",");
+  if (pieces.length >= 2) {
+    return { lat: pieces[0], lon: pieces[1] };
+  }
+
+  console.log("[gpsReader] ⚠️ Données GPS non reconnues :", part);
+  return null;
 }
