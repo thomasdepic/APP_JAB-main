@@ -6,7 +6,7 @@ export let lat = null;
 export let lng = null;
 
 let onPositionUpdate = null;
-let gpsReady         = false;
+let gpsReady = false;
 
 /* === API ====================================================== */
 
@@ -15,18 +15,17 @@ export function setOnPositionUpdate(cb) {
   onPositionUpdate = cb;
 }
 
-/** WebSerial или ожидание строк */
 export function initGpsReader() {
   window.receiveSerialLine = line => processLine(line);
 
   if ("serial" in navigator) {
     connectSerial();
   } else {
-    console.log("[gpsReader] Mode Android — ожидаем данные из window.receiveSerialLine");
+    console.log("[gpsReader] Mode Android — en attente de données via window.receiveSerialLine");
   }
 }
 
-/* === Web Serial ======================================== */
+/* === Web Serial =============================================== */
 
 export async function connectSerial() {
   if (!("serial" in navigator)) {
@@ -36,10 +35,10 @@ export async function connectSerial() {
 
   try {
     const port = await navigator.serial.requestPort();
-    await port.open({ baudRate: 9600 });
+    await port.open({ baudRate: 115200 });
 
     const decoder = new TextDecoderStream();
-    const reader  = decoder.readable.getReader();
+    const reader = decoder.readable.getReader();
     port.readable.pipeTo(decoder.writable);
 
     let buffer = "";
@@ -57,69 +56,51 @@ export async function connectSerial() {
       buffer = lines.at(-1);
     }
   } catch (err) {
-    console.error("[gpsReader] Erreur connexion série", err);
+    console.error("[gpsReader] ❌ Erreur connexion série", err);
   }
 }
 
-/* ======================================== */
+/* === Traitement de chaque ligne série ========================= */
 
 function processLine(rawLine) {
-  let line = rawLine.trim();
-  if (!line.length) return;
+  const line = rawLine.trim();
+  console.log(line);
+  if (!line.startsWith("GPS:")) return;
 
   console.log(`[gpsReader] 🔎 Traitement : [${line}]`);
 
-  if (line.startsWith("+RCV=")) {
-    const firstComma = line.indexOf(",");
-    if (firstComma !== -1) {
-      line = line.slice(firstComma + 1).trim();
-    }
-  }
+  const jsonPart = line.slice(4).trim();
 
-  const commaIdx = line.indexOf(",");
-  if (commaIdx === -1) {
-    console.log("[gpsReader] ❌ Ligne ignorée (pas de virgule)");
+  // Vérifie que la chaîne JSON est complète (évite les erreurs de parsing)
+  if (!jsonPart.startsWith("{") || !jsonPart.endsWith("}")) {
+    console.warn("[gpsReader] ❌ Trame tronquée ou corrompue :", jsonPart);
     return;
   }
 
-  const timePart = line.slice(0, commaIdx).trim();
-  const dataPart = line.slice(commaIdx + 1).trim();
-  if (timeDisplay) timeDisplay.textContent = `Heure : ${timePart}`;
+  try {
+    const data = JSON.parse(jsonPart);
 
-  const data = parseDataPart(dataPart);
-  if (!data) return;
-
-  lat = parseFloat(data.lat);
-  lng = parseFloat(data.lon);
-
-  if (!gpsReady) {
-    gpsReady = true;
-    const gpsStatus = document.getElementById("gpsStatus");
-    gpsStatus?.classList.add("ok");
-    if (gpsStatus) gpsStatus.textContent = "✅ Signal GPS détecté";
-    console.log("✅ Premier signal GPS reçu");
-  }
-
-  marker.setLatLng([lat, lng]);
-  onPositionUpdate?.({ lat, lng });
-}
-
-function parseDataPart(part) {
-  if (part.startsWith("{") && part.endsWith("}")) {
-    try {
-      const obj = JSON.parse(part);
-      if (obj.lat && obj.lon) return obj;
-    } catch (e) {
-      console.log("[gpsReader] ❌ JSON invalide", e);
+    // Accepte même les coordonnées (0.0, 0.0)
+    if (typeof data.lat !== "number" || typeof data.lon !== "number") {
+      console.warn("[gpsReader] ❌ Données GPS invalides :", jsonPart);
+      return;
     }
-    return null;
-  }
 
-  const pieces = part.split(",");
-  if (pieces.length >= 2) {
-    return { lat: pieces[0], lon: pieces[1] };
-  }
+    lat = parseFloat(data.lat);
+    lng = parseFloat(data.lon);
 
-  console.log("[gpsReader] ⚠️ Données GPS non reconnues :", part);
-  return null;
+    if (!gpsReady) {
+      gpsReady = true;
+      const gpsStatus = document.getElementById("gpsStatus");
+      gpsStatus?.classList.add("ok");
+      if (gpsStatus) gpsStatus.textContent = "✅ Signal GPS détecté";
+      console.log("✅ Premier signal GPS reçu");
+    }
+
+    marker.setLatLng([lat, lng]);
+    onPositionUpdate?.({ lat, lng });
+
+  } catch (e) {
+    console.error("[gpsReader] ❌ JSON invalide :", jsonPart, e);
+  }
 }
