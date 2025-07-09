@@ -1,5 +1,62 @@
 # APP_JAB
-application de suivi de mission JAB
+
+Application web de suivi et de configuration de missions pour drones, conçue pour la société Drone Des Champs.  
+L'application permet de visualiser et configurer un vol de collect de données au dessus d'un étang, puis de suivre les interventions en temps réel avec affichage cartographique (Leaflet) et intégration drone/GPS.
+
+---
+
+## 🌐 Structure du répertoire `/main`
+
+### 📄 Fichiers principaux
+
+---
+
+### 🎨 `/styles` – Feuilles de style CSS
+
+---
+
+### 🧠 `/src` – Scripts JavaScript principaux
+
+---
+
+### 🧩 `/src/config` – Scripts liés à la configuration des sites
+
+---
+
+### 🚁 `/src/execution` – Modules liés au suivi en temps réel
+
+---
+
+### 🧰 `/src/utils` – Fonctions utilitaires
+
+---
+
+### 🖼 `/assets` - Icones pour l'interface graphique
+
+---
+
+## 🚧 Fonctions principales
+
+- 📍 **Cartographie dynamique Leaflet** avec polygone éditable
+- 📐 **Configuration interactive** (grille, buffers, pente, rotation, profondeur, etc.)
+- 💾 **Sauvegarde/chargement automatique via JSON** intégré dans formulaire Flask
+- 🚁 **Suivi temps réel drone** permet d'update l'état de la mission
+
+---
+
+## 🧱 Dépendances techniques
+
+- Leaflet.js
+- Bootstrap (pour styliser les formulaires)
+- Turf.js (géotraitement en JS)
+
+---
+
+## 📌 À venir
+
+- Amélioration interface mobile/tablette
+- Export des plans de vol pour drones
+
 
 /main  
 │── /index.html  
@@ -30,4 +87,4 @@ application de suivi de mission JAB
 |── /.vscode  
 |   |── settings.json  
 |── package.json  
-|── README.txt  
+|── README.md 
